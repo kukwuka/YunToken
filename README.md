@@ -7,3 +7,5 @@
 ### with roulette and slot-machine
 
 ### and client version by jquery and web3
+
+### https://yusqa18.github.io/YunToken/
