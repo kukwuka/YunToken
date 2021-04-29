@@ -24,11 +24,6 @@ contract('YunToken', (accounts) => {
             return tokenInstance.symbol();
         }).then((symbol) => {
             assert.equal(symbol, 'YUN', 'has the correct symbol');
-
-            //Check contract standard
-            return tokenInstance.standard();
-        }).then((standard) => {
-            assert.equal(standard, 'Yunis Token v1.0', 'has a correct standard')
         });
     })
 
@@ -65,9 +60,10 @@ contract('YunToken', (accounts) => {
         }).then((receipt) => {
             assert.equal(receipt.logs.length, 1, 'triggers one event');
             assert.equal(receipt.logs[0].event, 'Transfer', 'should be the "Transfer" event');
-            assert.equal(receipt.logs[0].args._from, accounts[0], 'logs the account the tokens are transferred from');
-            assert.equal(receipt.logs[0].args._to, accounts[1], 'logs the account the tokens are transferred to');
-            assert.equal(receipt.logs[0].args._value, 25000, 'logs the transfer amount');
+            // console.log(receipt.logs[0].args.sender);
+            assert.equal(receipt.logs[0].args.from, accounts[0], 'logs the account the tokens are transferred from');
+            assert.equal(receipt.logs[0].args.to, accounts[1], 'logs the account the tokens are transferred to');
+            assert.equal(receipt.logs[0].args.value, 25000, 'logs the transfer amount');
 
             //check balance
             return tokenInstance.balanceOf(accounts[1]);
@@ -96,9 +92,9 @@ contract('YunToken', (accounts) => {
         }).then((receipt) => {
             assert.equal(receipt.logs.length, 1, 'triggers one event');
             assert.equal(receipt.logs[0].event, 'Approval', 'should be the "Approval" event');
-            assert.equal(receipt.logs[0].args._owner, accounts[0], 'logs the account the tokens are transferred from');
-            assert.equal(receipt.logs[0].args._spender, accounts[1], 'logs the account the tokens are transferred to');
-            assert.equal(receipt.logs[0].args._value, 100, 'logs the transfer amount');
+            assert.equal(receipt.logs[0].args.owner, accounts[0], 'logs the account the tokens are transferred from');
+            assert.equal(receipt.logs[0].args.spender, accounts[1], 'logs the account the tokens are transferred to');
+            assert.equal(receipt.logs[0].args.value, 100, 'logs the transfer amount');
 
             //check allowance
             return tokenInstance.allowance(accounts[0], accounts[1]);
@@ -117,7 +113,7 @@ contract('YunToken', (accounts) => {
         }).then(() => {
 
             //Approve spendingAccount to spend 10 tokens from fromAccount
-            return tokenInstance.approve(spendingAccount, 10, {from: fromAccount});
+            return tokenInstance.approve(spendingAccount, 15, {from: fromAccount});
         }).then(() => {
 
             //Try transferring something  larger the sender balance
@@ -136,11 +132,19 @@ contract('YunToken', (accounts) => {
             //transferFrom for event
             return tokenInstance.transferFrom(fromAccount, toAccount, 10, {from: spendingAccount});
         }).then((receipt) => {
-            assert.equal(receipt.logs.length, 1, 'triggers one event');
+            // console.log(receipt.logs.length);
+            assert.equal(receipt.logs.length, 2, 'triggers two event');
             assert.equal(receipt.logs[0].event, 'Transfer', 'should be the "Transfer" event');
-            assert.equal(receipt.logs[0].args._from, fromAccount, 'logs the account the tokens are transferred from');
-            assert.equal(receipt.logs[0].args._to, toAccount, 'logs the account the tokens are transferred to');
-            assert.equal(receipt.logs[0].args._value, 10, 'logs the transfer amount');
+            assert.equal(receipt.logs[0].args.from, fromAccount, 'logs the account the tokens are transferred from');
+            assert.equal(receipt.logs[0].args.to, toAccount, 'logs the account the tokens are transferred to');
+            assert.equal(receipt.logs[0].args.value, 10, 'logs the transfer amount');
+
+            assert.equal(receipt.logs[1].event, 'Approval', 'should be the "Transfer" event');
+            assert.equal(receipt.logs[1].args.owner, fromAccount, 'logs the account the tokens are transferred from');
+            assert.equal(receipt.logs[1].args.spender, spendingAccount, 'logs the account the tokens are transferred to');
+            // console.log(receipt.logs[1].args.value);
+            assert.equal(receipt.logs[1].args.value.toNumber(), 5, 'logs the transfer amount');
+
 
             //check balance
             return tokenInstance.balanceOf(fromAccount);
@@ -155,7 +159,7 @@ contract('YunToken', (accounts) => {
             //check allowance
             return tokenInstance.allowance(fromAccount, spendingAccount);
         }).then((allowance) => {
-            assert.equal(allowance.toNumber(), 0, 'deducts the amount from the allowance')
+            assert.equal(allowance.toNumber(), 5, 'deducts the amount from the allowance')
         });
     });
 
@@ -228,7 +232,7 @@ contract('YunToken', (accounts) => {
             assert.equal(receipt.logs.length, 1, 'triggers one event');
             assert.equal(receipt.logs[0].event, 'Roulette', 'should be the "Transfer" event');
             assert.equal(receipt.logs[0].args._player, admin, 'logs the account the tokens are bought by');
-            console.log(receipt.logs[0].args._reward.toNumber());
+            // console.log(receipt.logs[0].args._reward.toNumber());
 
             //get balance after playing
             return tokenInstance.balanceOf(admin);
@@ -253,8 +257,8 @@ contract('YunToken', (accounts) => {
             assert.equal(receipt.logs.length, 1, 'triggers one event');
             assert.equal(receipt.logs[0].event, 'SlotMachine', 'should be the "Transfer" event');
             assert.equal(receipt.logs[0].args._player, admin, 'logs the account the tokens are bought by');
-            console.log(receipt.logs[0].args._reward.toNumber());
-            console.log(receipt.logs[0].args._wheelsValues);
+            // console.log(receipt.logs[0].args._reward.toNumber());
+            // console.log(receipt.logs[0].args._wheelsValues);
 
             //get balance after playing
             return tokenInstance.balanceOf(admin);

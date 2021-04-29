@@ -1,19 +1,10 @@
 pragma solidity ^0.8.4;
 
-import "./Safemath.sol";
+import "./utils/Safemath.sol";
+import "./extensions/ERC20.sol";
 
-contract YunToken {
+contract YunToken is ERC20 {
     using SafeMath for uint256;
-
-    //Settings
-    string public name = "Yunis Token";
-    string public symbol = "YUN";
-    string public standard = "Yunis Token v1.0";
-
-    //ERC-20
-    uint public totalSupply;
-    mapping(address => uint256) public balanceOf;
-    mapping(address => mapping(address => uint256)) public allowance;
 
     //Casino
     uint256 private randNonceCasino = 0;
@@ -26,11 +17,6 @@ contract YunToken {
     uint256 private tokenAvailableForSale;
 
     //Events
-
-    //Transfer
-    event Transfer(address indexed _from, address indexed _to, uint256 _value);
-    //Approval
-    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
     //Casino
     //Roulette
@@ -46,61 +32,13 @@ contract YunToken {
 
 
 
-    constructor(uint256 _initialSupply, uint256 _tokenPrice, uint256 _tokensAvailable) {
+    constructor(uint256 _initialSupply, uint256 _tokenPrice, uint256 _tokensAvailable) ERC20('Yunis Token', 'YUN') {
         admin = msg.sender;
-        balanceOf[msg.sender] = _initialSupply;
-        totalSupply = _initialSupply;
+        _balances[msg.sender] = _initialSupply;
+        _totalSupply = _initialSupply;
         tokenPrice = _tokenPrice;
         tokenAvailableForSale = _tokensAvailable;
     }
-
-    //ERC-20
-    //__________________________________________________________________________________________________________________
-    //Transfer
-    function transfer(address _to, uint256 _value) public returns (bool success){
-        //Exception if account doesn't have enough
-        require(balanceOf[msg.sender] >= _value);
-        //Transfer the balance
-        balanceOf[msg.sender] -= _value;
-        balanceOf[_to] += _value;
-
-        //Transfer Event
-        emit Transfer(msg.sender, _to, _value);
-        //Return boolean
-        return true;
-    }
-
-    //Approve
-    function approve(address _spender, uint256 _value) public returns (bool success){
-        //allowance
-        allowance[msg.sender][_spender] = _value;
-        //Approve event
-        emit Approval(msg.sender, _spender, _value);
-        return true;
-    }
-
-    //Transfer From
-    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success){
-        //require _from has enough tokens
-        require(_value <= balanceOf[_from]);
-
-        //require allowance is big enough
-        require(_value <= allowance[_from][msg.sender]);
-
-        //change the balance
-        balanceOf[_from] -= _value;
-        balanceOf[_to] += _value;
-
-        //update the allowance
-        allowance[_from][msg.sender] -= _value;
-
-        //Transfer event
-        emit Transfer(_from, _to, _value);
-
-        //return true
-        return true;
-    }
-
 
     //Selling Tokens
     //__________________________________________________________________________________________________________________
@@ -115,7 +53,7 @@ contract YunToken {
         require(tokenAvailableForSale >= _numberOfTokens);
 
         //Send tokens
-        balanceOf[msg.sender] += _numberOfTokens;
+        _balances[msg.sender] += _numberOfTokens;
 
         //Require that a transfer is successful
         tokensSold += _numberOfTokens;
@@ -168,14 +106,14 @@ contract YunToken {
     //Roulette casino
     function roulette(uint _value, uint _color) public returns (uint _value_casino, uint _color_casino, uint256 reward){
         //Exception if account doesn't have enough
-        require(balanceOf[msg.sender] >= 1);
+        require(_balances[msg.sender] >= 1);
 
         //Correctly input arguments
         require(_color < 3);
         require(_value < 37);
 
         //Client pay token for spinning
-        balanceOf[msg.sender] -= 1;
+        _balances[msg.sender] -= 1;
 
         _value_casino = rand(37);
         _color_casino = rand(2);
@@ -185,7 +123,7 @@ contract YunToken {
             // If ZERO
             //Pay reward
             reward = 1000;
-            balanceOf[msg.sender] += reward;
+            _balances[msg.sender] += reward;
         }
 
         emit Roulette(msg.sender, reward);
@@ -196,10 +134,10 @@ contract YunToken {
     //Slot-machine
     function slotMachine() public returns (uint[3] memory wheelsValues, uint reward){
         //Exception if account doesn't have enough
-        require(balanceOf[msg.sender] >= 1);
+        require(_balances[msg.sender] >= 1);
 
         //Client pay token for spinning
-        balanceOf[msg.sender] -= 1;
+        _balances[msg.sender] -= 1;
 
         reward = 0;
         wheelsValues[0] = rand(5) + 1;
@@ -225,7 +163,7 @@ contract YunToken {
         }
 
         //Pay reward
-        balanceOf[msg.sender] += reward;
+        _balances[msg.sender] += reward;
 
 
         emit SlotMachine(msg.sender, reward, wheelsValues);
