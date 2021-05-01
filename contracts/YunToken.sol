@@ -1,23 +1,21 @@
 pragma solidity ^0.8.4;
 
 import "./utils/Safemath.sol";
+import "./extensions/Ownable.sol";
 import "./extensions/ERC20.sol";
+import "./extensions/Saleable.sol";
 
-contract YunToken is ERC20 {
+contract YunToken is ERC20, Ownable,Saleable {
     using SafeMath for uint256;
 
     //Casino
     uint256 private randNonceCasino = 0;
 
     //Selling
-    bool public onSale = true;
-    address admin;
     uint256 public  tokenPrice;
-    uint256 public tokensSold;
     uint256 private tokenAvailableForSale;
 
     //Events
-
     //Casino
     //Roulette
     event Roulette(address _player, uint256 _reward);
@@ -25,15 +23,12 @@ contract YunToken is ERC20 {
     event SlotMachine(address _player, uint256 _reward, uint[3] _wheelsValues);
 
     //Selling
-    event Sell(address _buyer, uint256 _amount);
-    event StopSelling();
-    event StartSelling();
+
     event SetTokenPrice(uint256 _tokenPrice);
 
 
 
     constructor(uint256 _initialSupply, uint256 _tokenPrice, uint256 _tokensAvailable) ERC20('Yunis Token', 'YUN') {
-        admin = msg.sender;
         _balances[msg.sender] = _initialSupply;
         _totalSupply = _initialSupply;
         tokenPrice = _tokenPrice;
@@ -66,26 +61,7 @@ contract YunToken is ERC20 {
         return true;
     }
 
-    function stopSale() public {
-        //Require admin
-        require(msg.sender == admin);
-
-        onSale = false;
-        emit StopSelling();
-    }
-
-    function startSale() public {
-        //Require admin
-        require(msg.sender == admin);
-
-        onSale = true;
-        emit StartSelling();
-    }
-
-    function setTokenPrice(uint256 _tokenPrice) public {
-        //Require admin
-        require(msg.sender == admin);
-
+    function setTokenPrice(uint256 _tokenPrice) public onlyOwner {
 
         //Set token Price
         tokenPrice = _tokenPrice;
