@@ -20,6 +20,7 @@ contract YunBtcCake is ERC20 {
 
     event AddLiquidity(address indexed sender, uint256 amountBTC, uint256 amountYUN, uint256 liquidity);
     event Burn(address indexed sender, uint amountBTC, uint amountYUN);
+    event Debug(uint256);
 
 
     function getReserves() public view returns (uint256 _reserveBTC, uint256 _reserveYUN) {
@@ -44,23 +45,23 @@ contract YunBtcCake is ERC20 {
     }
 
     function addLiquidity(uint256 _amountInBtc, uint256 _amountInYun) public returns (uint liquidity) {
-        require((_amountInBtc == 0) || (_amountInYun == 0));
+        emit Debug(_amountInBtc);
+        emit Debug(_amountInYun);
+        require((_amountInBtc == 0) || (_amountInYun == 0), "arguments can not be equal zero");
+
 
         (uint256 _reverseBTC,uint256 _reverseYUN) = getReserves();
-
-        require(
-            (_amountInBtc.div(_amountInYun) == _reverseBTC.div(_reverseYUN))
-            ||
-            (_amountInYun.div(_amountInBtc) == _reverseYUN.div(_reverseBTC)),
-            "proportion isn't right"
-        );
-
-        require(_reverseBTC > _amountInBtc, "not Enough BTC Token");
-        require(_reverseYUN > _amountInYun, "not Enough YUN Token");
 
         if (_totalSupply == 0) {
             liquidity = 1000;
         } else {
+            require(
+                (_amountInBtc.div(_amountInYun) == _reverseBTC.div(_reverseYUN))
+                ||
+                (_amountInYun.div(_amountInBtc) == _reverseYUN.div(_reverseBTC)),
+                "proportion isn't right"
+            );
+
             liquidity = Math.min(
                 _amountInBtc.mul(_totalSupply) / _reverseBTC,
                 _amountInYun.mul(_totalSupply) / _reverseYUN
