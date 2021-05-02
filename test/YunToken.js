@@ -2,13 +2,13 @@ const YunToken = artifacts.require("YunToken");
 
 contract('YunToken', (accounts) => {
     let tokenInstance;
-    let tokenPrice = 1000000000000000;
-    let admin = accounts[0];
-    let fromAccount = accounts[2];
-    let toAccount = accounts[3];
-    let spendingAccount = accounts[4];
-    let buyer = accounts[5];
-    let numberOfTokens = 10;
+    const tokenPrice = 100000000;
+    const admin = accounts[0];
+    const fromAccount = accounts[2];
+    const toAccount = accounts[3];
+    const spendingAccount = accounts[4];
+    const buyer = accounts[5];
+    const numberOfTokens = 10;
 
 
     it('initialized the contract with the correct values', () => {
