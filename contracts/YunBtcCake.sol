@@ -44,10 +44,10 @@ contract YunBtcCake is ERC20 {
         emit Burn(msg.sender, amountBTC, amountYUN);
     }
 
-    function addLiquidity(uint256 _amountInBtc, uint256 _amountInYun) public returns (uint liquidity) {
+    function addLiquidity(uint256 _amountInBtc, uint256 _amountInYun) public returns (uint256 liquidity) {
         emit Debug(_amountInBtc);
         emit Debug(_amountInYun);
-        require((_amountInBtc == 0) || (_amountInYun == 0), "arguments can not be equal zero");
+        //        require((_amountInBtc == 0) || (_amountInYun == 0), "arguments can not be equal zero");
 
 
         (uint256 _reverseBTC,uint256 _reverseYUN) = getReserves();
@@ -67,10 +67,12 @@ contract YunBtcCake is ERC20 {
                 _amountInYun.mul(_totalSupply) / _reverseYUN
             );
         }
+        require(liquidity != 0, "Error");
 
         IERC20(btcContract).transferFrom(msg.sender, address(this), _amountInBtc);
         IERC20(yunContract).transferFrom(msg.sender, address(this), _amountInYun);
         _mint(msg.sender, liquidity);
+        emit AddLiquidity(msg.sender, _amountInBtc, _amountInYun, liquidity);
     }
 
 
@@ -107,24 +109,14 @@ contract YunBtcCake is ERC20 {
 
     function getYunTokenPrice(uint256 _amountIn) public view returns (uint256 amountOut){
 
-
-        uint256 balanceBTC = IERC20(btcContract).balanceOf(address(this));
-        uint256 balanceYUN = IERC20(yunContract).balanceOf(address(this));
-
-        uint256 konstant0 = balanceYUN.mul(balanceBTC);
-        //        uint256 konstant1 = balanceYUN.mul(balanceBTC.add(_amount));
-        amountOut = balanceYUN - konstant0 / (balanceBTC + _amountIn);
+        (uint256 _reverseBTC, uint256 _reverseYUN) = getReserves();
+        amountOut = _reverseYUN.sub(_reverseYUN.mul(_reverseBTC).div(_reverseBTC.add(_amountIn)));
     }
 
 
     function getBtcTokenPrice(uint256 _amountIn) public view returns (uint256 amountOut){
-        require(IERC20(yunContract).balanceOf(msg.sender) > _amountIn, "not Enough BTC Token");
 
-        uint256 balanceBTC = IERC20(btcContract).balanceOf(address(this));
-        uint256 balanceYUN = IERC20(yunContract).balanceOf(address(this));
-
-        uint256 konstant0 = balanceYUN.mul(balanceBTC);
-        //        uint256 konstant1 = balanceYUN.mul(balanceBTC.add(_amount));
-        amountOut = balanceBTC - konstant0 / (balanceYUN + _amountIn);
+        (uint256 _reverseBTC, uint256 _reverseYUN) = getReserves();
+        amountOut = _reverseBTC.sub(_reverseBTC.mul(_reverseYUN).div(_reverseYUN.add(_amountIn)));
     }
 }
