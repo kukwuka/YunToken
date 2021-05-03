@@ -19,8 +19,9 @@ contract YunBtcCake is ERC20 {
     }
 
     event AddLiquidity(address indexed sender, uint256 amountBTC, uint256 amountYUN, uint256 liquidity);
-    event Burn(address indexed sender, uint amountBTC, uint amountYUN);
-    event Debug(uint256);
+    event RemoveLiquidity(address indexed sender, uint amountBTC, uint amountYUN);
+    event BuyBtcToken(address indexed buyer, uint amountOutBTC, uint amountInYUN);
+    event BuyYunToken(address indexed buyer, uint amountInBTC, uint amountOutYUN);
 
 
     function getReserves() public view returns (uint256 _reserveBTC, uint256 _reserveYUN) {
@@ -30,26 +31,25 @@ contract YunBtcCake is ERC20 {
 
     function removeLiquidity() public {
         uint256 liquidity = balanceOf(msg.sender);
-        require(balanceOf(msg.sender) != 0);
+        require(liquidity != 0);
         (uint256 _reverseBTC, uint256  _reverseYUN) = getReserves();
 
-        uint256 amountBTC = liquidity.mul(_reverseBTC) / _totalSupply;
+        uint256 amountBTC = liquidity.mul(_reverseBTC) / _totalSupply - 1;
 
         // using balances ensures pro-rata distribution
-        uint256 amountYUN = liquidity.mul(_reverseYUN) / _totalSupply;
+        uint256 amountYUN = liquidity.mul(_reverseYUN) / _totalSupply - 1;
 
-        IERC20(yunContract).transfer(msg.sender, amountBTC);
-        IERC20(btcContract).transfer(msg.sender, amountYUN);
 
-        emit Burn(msg.sender, amountBTC, amountYUN);
+        _burn(msg.sender, liquidity);
+
+        IERC20(yunContract).transfer(msg.sender, amountYUN);
+        IERC20(btcContract).transfer(msg.sender, amountBTC);
+
+        emit RemoveLiquidity(msg.sender, amountBTC, amountYUN);
     }
 
     function addLiquidity(uint256 _amountInBtc, uint256 _amountInYun) public returns (uint256 liquidity) {
-        emit Debug(_amountInBtc);
-        emit Debug(_amountInYun);
-        //        require((_amountInBtc == 0) || (_amountInYun == 0), "arguments can not be equal zero");
-
-
+        require((_amountInBtc != 0) || (_amountInYun != 0), "arguments can not be equal zero");
         (uint256 _reverseBTC,uint256 _reverseYUN) = getReserves();
 
         if (_totalSupply == 0) {
@@ -76,47 +76,50 @@ contract YunBtcCake is ERC20 {
     }
 
 
-    function buyYunToken(uint256 _amountIn) public {
+    function buyYunToken(uint256 _amountIn) public returns (uint256 _amountOut) {
         require(_amountIn != 0);
         require(IERC20(btcContract).balanceOf(msg.sender) > _amountIn, "not Enough BTC Token");
 
         (, uint256 _reserveYUN) = getReserves();
 
 
-        uint256 amountOut = getBtcTokenPrice(_amountIn);
-        require(_reserveYUN > amountOut);
+        _amountOut = getBtcTokenPrice(_amountIn);
+        require(_reserveYUN > _amountOut);
 
         IERC20(btcContract).transferFrom(msg.sender, address(this), _amountIn);
-        IERC20(yunContract).transfer(msg.sender, amountOut);
+        IERC20(yunContract).transfer(msg.sender, _amountOut);
+        emit BuyYunToken(msg.sender, _amountIn, _amountOut);
+
     }
 
 
-    function buyBtcToken(uint256 _amountIn) public {
+    function buyBtcToken(uint256 _amountIn) public returns (uint256 _amountOut){
         require(_amountIn != 0);
         require(IERC20(yunContract).balanceOf(msg.sender) > _amountIn, "not Enough YUN Token");
 
         (uint256 _reserveBTC,) = getReserves();
 
 
-        uint256 amountOut = getBtcTokenPrice(_amountIn);
-        require(_reserveBTC > amountOut);
+        _amountOut = getBtcTokenPrice(_amountIn);
+        require(_reserveBTC > _amountOut);
 
         IERC20(yunContract).transferFrom(msg.sender, address(this), _amountIn);
-        IERC20(btcContract).transfer(msg.sender, amountOut);
+        IERC20(btcContract).transfer(msg.sender, _amountOut);
+        emit BuyBtcToken(msg.sender, _amountOut, _amountIn);
 
 
     }
 
-    function getYunTokenPrice(uint256 _amountIn) public view returns (uint256 amountOut){
+    function getYunTokenPrice(uint256 _amountIn) public view returns (uint256 _amountOut){
 
         (uint256 _reverseBTC, uint256 _reverseYUN) = getReserves();
-        amountOut = _reverseYUN.sub(_reverseYUN.mul(_reverseBTC).div(_reverseBTC.add(_amountIn)));
+        _amountOut = _reverseYUN.sub(_reverseYUN.mul(_reverseBTC).div(_reverseBTC.add(_amountIn)));
     }
 
 
-    function getBtcTokenPrice(uint256 _amountIn) public view returns (uint256 amountOut){
+    function getBtcTokenPrice(uint256 _amountIn) public view returns (uint256 _amountOut){
 
         (uint256 _reverseBTC, uint256 _reverseYUN) = getReserves();
-        amountOut = _reverseBTC.sub(_reverseBTC.mul(_reverseYUN).div(_reverseYUN.add(_amountIn)));
+        _amountOut = _reverseBTC.sub(_reverseBTC.mul(_reverseYUN).div(_reverseYUN.add(_amountIn)));
     }
 }

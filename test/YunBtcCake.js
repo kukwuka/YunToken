@@ -49,7 +49,7 @@ contract('YunBtcCake', async (accounts) => {
 
         let receipt = await CakeTokenInstance.addLiquidity(totalSupplyBtc / 10, totalSupplyYun / 10, {from: admin});
         assert(receipt.logs.length > 1, 'triggers one event');
-        assert.equal(receipt.logs[receipt.logs.length - 1].event, 'AddLiquidity', 'should be the "Sell" event');
+        assert.equal(receipt.logs[receipt.logs.length - 1].event, 'AddLiquidity', 'should be the "AddLiquidity" event');
         assert.equal(receipt.logs[receipt.logs.length - 1].args.sender, admin, 'who added liquidity');
         assert.equal(receipt.logs[receipt.logs.length - 1].args.amountBTC, totalSupplyBtc / 10, 'liquidity in Btc tokens');
         assert.equal(receipt.logs[receipt.logs.length - 1].args.amountYUN, totalSupplyYun / 10, 'liquidity in Yun tokens');
@@ -62,7 +62,7 @@ contract('YunBtcCake', async (accounts) => {
 
         receipt = await CakeTokenInstance.addLiquidity(3.5 * totalSupplyBtc / 10, 3.5 * totalSupplyYun / 10, {from: admin});
         assert(receipt.logs.length > 1, 'triggers one event');
-        assert.equal(receipt.logs[receipt.logs.length - 1].event, 'AddLiquidity', 'should be the "Sell" event');
+        assert.equal(receipt.logs[receipt.logs.length - 1].event, 'AddLiquidity', 'should be the "AddLiquidity" event');
         assert.equal(receipt.logs[receipt.logs.length - 1].args.sender, admin, 'who added liquidity');
         assert.equal(receipt.logs[receipt.logs.length - 1].args.amountBTC, 3.5 * totalSupplyBtc / 10, 'liquidity in Btc tokens');
         assert.equal(receipt.logs[receipt.logs.length - 1].args.amountYUN, 3.5 * totalSupplyYun / 10, 'liquidity in Yun tokens');
@@ -77,7 +77,6 @@ contract('YunBtcCake', async (accounts) => {
 
         assert.equal(reverseBtc, (3.5 + 1) * totalSupplyBtc / 10);
         assert.equal(reverseYun, (3.5 + 1) * totalSupplyYun / 10);
-
     });
 
 
@@ -99,10 +98,79 @@ contract('YunBtcCake', async (accounts) => {
 
         assert.equal(BtcPrice.toNumber(), amountOutYUN, 'How many Yun tokens we will get is counted right')
     });
-    
-    
-    
-    it("buy tokens",async ()=>{
 
-    })
+
+    it("buy tokens", async () => {
+        const CakeTokenInstance = await YunBtcCake.deployed();
+        const YunTokenInstance = await YunToken.deployed();
+        const BtcTokenInstance = await BtcToken.deployed();
+
+        const firstBalanceYun = await YunTokenInstance.balanceOf(admin);
+        const firstBalanceBtc = await BtcTokenInstance.balanceOf(admin);
+
+
+        let receipt = await CakeTokenInstance.buyBtcToken(yunTokensCount, {from: admin});
+
+        assert(receipt.logs.length > 1, 'triggers one event');
+        assert.equal(receipt.logs[receipt.logs.length - 1].event, 'BuyBtcToken', 'should be the "BuyBtcToken" event');
+        assert.equal(receipt.logs[receipt.logs.length - 1].args.buyer, admin, 'who buyed');
+        assert.equal(receipt.logs[receipt.logs.length - 1].args.amountInYUN, yunTokensCount, 'liquidity in Btc tokens');
+
+
+        let amountBtc = receipt.logs[receipt.logs.length - 1].args.amountOutBTC;
+
+        const secondBalanceYun = await YunTokenInstance.balanceOf(admin);
+        const secondBalanceBtc = await BtcTokenInstance.balanceOf(admin);
+
+        assert.equal(firstBalanceBtc.toNumber() + amountBtc.toNumber(), secondBalanceBtc.toNumber(), 'balance after buying Btc')
+        assert.equal(firstBalanceYun.toNumber() - yunTokensCount, secondBalanceYun.toNumber(), 'balance after buying Btc')
+
+
+        receipt = await CakeTokenInstance.buyYunToken(btcTokensCount, {from: admin});
+
+        assert(receipt.logs.length > 1, 'triggers one event');
+        assert.equal(receipt.logs[receipt.logs.length - 1].event, 'BuyYunToken', 'should be the "BuyBtcToken" event');
+        assert.equal(receipt.logs[receipt.logs.length - 1].args.buyer, admin, 'who buyed');
+        assert.equal(receipt.logs[receipt.logs.length - 1].args.amountInBTC, btcTokensCount, 'liquidity in Btc tokens');
+
+        let amountYun = receipt.logs[receipt.logs.length - 1].args.amountOutYUN;
+
+        const thirdBalanceYun = await YunTokenInstance.balanceOf(admin);
+        const thirdBalanceBtc = await BtcTokenInstance.balanceOf(admin);
+
+        assert.equal(secondBalanceYun.toNumber() + amountYun.toNumber(), thirdBalanceYun.toNumber(), 'balance after buying Btc')
+        assert.equal(secondBalanceBtc.toNumber() - btcTokensCount, thirdBalanceBtc.toNumber(), 'balance after buying Btc')
+    });
+
+
+    it('remove liquidity', async () => {
+        const CakeTokenInstance = await YunBtcCake.deployed();
+        const YunTokenInstance = await YunToken.deployed();
+        const BtcTokenInstance = await BtcToken.deployed();
+
+        const firstBalanceCake = await CakeTokenInstance.balanceOf(admin);
+        const firstBalanceYun = await YunTokenInstance.balanceOf(admin);
+        const firstBalanceBtc = await BtcTokenInstance.balanceOf(admin);
+
+        assert.notEqual(firstBalanceCake.toNumber(), 0, 'have Cake-lp tokens')
+
+        let receipt = await CakeTokenInstance.removeLiquidity();
+
+        // assert(receipt.logs.length > 1, 'triggers one event');
+        assert.equal(receipt.logs[receipt.logs.length - 1].event, 'RemoveLiquidity', 'should be the "RemoveLiquidity" event');
+        assert.equal(receipt.logs[receipt.logs.length - 1].args.sender, admin, 'who buyed');
+
+        const amountBtc = receipt.logs[receipt.logs.length - 1].args.amountBTC;
+        const amountYun = receipt.logs[receipt.logs.length - 1].args.amountYUN;
+
+
+        const secondBalanceCake = await CakeTokenInstance.balanceOf(admin);
+        const secondBalanceYun = await YunTokenInstance.balanceOf(admin);
+        const secondBalanceBtc = await BtcTokenInstance.balanceOf(admin);
+
+        assert.equal(secondBalanceYun.toNumber(), firstBalanceYun.toNumber() + amountYun.toNumber(), 'balance Yun after removing liquidity');
+        assert.equal(secondBalanceBtc.toNumber(), firstBalanceBtc.toNumber() + amountBtc.toNumber(), 'balance Btc after removing liquidity');
+        assert.equal(secondBalanceCake.toNumber(), 0, 'all cake-lp burned')
+    });
+
 });
