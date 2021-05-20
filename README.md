@@ -8,4 +8,4 @@
 
 ### and client version by jquery and web3
 
-### https://yusqa18.github.io/YunToken/
+### https://kukwuka.github.io/YunToken/
